@@ -1,6 +1,4 @@
-use std::sync::Arc;
 use crate::GlobalState;
+use std::sync::Arc;
 
-pub async fn run(global_state: Arc<GlobalState>) {
-    
-}
+pub async fn run(_global_state: Arc<GlobalState>) {}

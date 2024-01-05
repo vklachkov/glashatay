@@ -1,5 +1,5 @@
 use anyhow::Context;
-use std::{env, sync::Arc};
+use std::sync::Arc;
 use teloxide::{
     dispatching::{
         dialogue::{self, InMemStorage},
@@ -11,7 +11,7 @@ use teloxide::{
 };
 use url::Url;
 
-use crate::GlobalState;
+use crate::{config, GlobalState};
 
 type MyDialogue = Dialogue<BotState, InMemStorage<BotState>>;
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
@@ -28,18 +28,18 @@ pub enum BotState {
     #[default]
     Start,
     ReceiveChannelId,
-    ReceiveVkUrl { channel_id: ChatId },
-    Active { channel_id: ChatId, vk_id: String },
+    ReceiveVkUrl {
+        channel_id: ChatId,
+    },
+    Active {
+        channel_id: ChatId,
+        vk_id: String,
+    },
 }
 
 pub async fn run(global_state: Arc<GlobalState>) {
-    const TOKEN: &str = "6786939573:AAEF6ciF_gBzKZzhsVV35qsYUgzfzX5IOA0";
-
-    env::set_var("TELOXIDE_TOKEN", TOKEN);
-    let bot = Bot::from_env();
-
+    let bot = Bot::new(&global_state.config.telegram.bot_token);
     let bot_state = InMemStorage::<BotState>::new();
-    let global_state = Arc::new(GlobalState {});
 
     Dispatcher::builder(bot, schema())
         .dependencies(dptree::deps![bot_state, global_state])
@@ -49,11 +49,14 @@ pub async fn run(global_state: Arc<GlobalState>) {
         .await;
 }
 
+#[rustfmt::skip]
 fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
     use dptree::case;
 
     let command_handler = teloxide::filter_command::<BotCommand, _>()
-        .branch(case![BotState::Start].branch(case![BotCommand::Start].endpoint(bot_start)))
+        .branch(
+            case![BotState::Start]
+                .branch(case![BotCommand::Start].endpoint(bot_start)))
         .branch(
             case![BotState::Active { channel_id, vk_id }]
                 .branch(case![BotCommand::TestPost].endpoint(bot_test_post)),
@@ -61,15 +64,15 @@ fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>>
 
     let message_handler = Update::filter_message()
         .branch(command_handler)
-        .branch(case![BotState::Start].endpoint(bot_lets_start))
-        .branch(case![BotState::ReceiveChannelId].endpoint(bot_receive_channel_id))
-        .branch(case![BotState::ReceiveVkUrl { channel_id }].endpoint(bot_receive_vk_url))
-        .branch(dptree::endpoint(bot_other));
+        .branch(case![BotState::Start].endpoint(lets_start))
+        .branch(case![BotState::ReceiveChannelId].endpoint(receive_channel_id))
+        .branch(case![BotState::ReceiveVkUrl { channel_id }].endpoint(receive_vk_url))
+        .branch(dptree::endpoint(other));
 
     dialogue::enter::<Update, InMemStorage<BotState>, BotState, _>().branch(message_handler)
 }
 
-async fn bot_lets_start(bot: Bot, msg: Message) -> HandlerResult {
+async fn lets_start(bot: Bot, msg: Message) -> HandlerResult {
     let text = "Чтобы начать, введите /start";
     bot.send_message(msg.chat.id, text).await?;
 
@@ -85,7 +88,7 @@ async fn bot_start(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResul
     Ok(())
 }
 
-async fn bot_receive_channel_id(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
+async fn receive_channel_id(bot: Bot, dialogue: MyDialogue, msg: Message) -> HandlerResult {
     let non_channel_forward = async {
         bot.send_message(msg.chat.id, "Сообщение должно быть переслано из канала")
             .await?;
@@ -131,7 +134,7 @@ async fn bot_receive_channel_id(bot: Bot, dialogue: MyDialogue, msg: Message) ->
     Ok(())
 }
 
-async fn bot_receive_vk_url(
+async fn receive_vk_url(
     bot: Bot,
     dialogue: MyDialogue,
     posts_channel_id: ChatId,
@@ -176,35 +179,34 @@ async fn bot_receive_vk_url(
     Ok(())
 }
 
-async fn bot_other(bot: Bot, msg: Message) -> HandlerResult {
+async fn other(bot: Bot, msg: Message) -> HandlerResult {
     bot.send_message(msg.chat.id, "Всё настроено").await?;
     Ok(())
 }
 
-async fn bot_test_post(bot: Bot, (channel_id, vk_id): (ChatId, String)) -> HandlerResult {
-    let post = get_post(&vk_id).await.context("requesting to vk api")?;
-    let post = vk2md2(post);
+async fn bot_test_post(
+    bot: Bot,
+    global_state: Arc<GlobalState>,
+    (channel_id, vk_id): (ChatId, String),
+) -> HandlerResult {
+    let post = get_post(&global_state.config.vk, &vk_id)
+        .await
+        .context("requesting to vk api")?;
 
-    bot.send_message(channel_id, post)
-        .parse_mode(teloxide::types::ParseMode::MarkdownV2)
-        .await?;
+    bot.send_message(channel_id, vk2md2(post)).await?;
 
     Ok(())
 }
 
-async fn get_post(vk_id: &str) -> anyhow::Result<String> {
-    const SERVER: &str = "api.vk.com";
+async fn get_post(config: &config::Vk, vk_id: &str) -> anyhow::Result<String> {
     const VERSION: &str = "5.137";
-    const LANGUAGE: &str = "ru";
     const METHOD: &str = "wall.get";
-    const SERVICE_KEY: &str =
-        "d9312976d9312976d931297609da27e21fdd931d9312976bca7810da8f13e38180454b8";
 
-    let url: Url = Url::parse_with_params(
-        &format!("https://{SERVER}/method/{METHOD}"),
+    let url = Url::parse_with_params(
+        &format!("{base}method/{METHOD}", base = &config.server),
         &[
             ("v", VERSION),
-            ("lang", LANGUAGE),
+            ("lang", &config.language),
             ("domain", vk_id),
             ("offset", "0"),
             ("count", "5"),
@@ -212,18 +214,25 @@ async fn get_post(vk_id: &str) -> anyhow::Result<String> {
     )
     .expect("url should be valid");
 
+    log::debug!("Url: {url}");
+
     let client = reqwest::Client::new();
 
     let response = client
         .get(url)
-        .bearer_auth(SERVICE_KEY)
+        .bearer_auth(&config.service_key)
         .send()
         .await
         .context("executing wall.get")?;
 
     let response = response
-        .json::<serde_json::Value>()
+        .text()
         .await
+        .context("reading response from wall.get")?;
+
+    // log::debug!("Vk response: {response}");
+
+    let response = serde_json::from_str::<serde_json::Value>(&response)
         .context("parsing response from wall.get")?;
 
     let text = response["response"]["items"][0]["text"]

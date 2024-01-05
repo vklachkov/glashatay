@@ -1,16 +1,31 @@
 mod bot;
+mod config;
 mod vk_poll;
 
-use std::{env, process, sync::Arc};
+use anyhow::Context;
+use argh::FromArgs;
+use config::Config;
+use std::{env, path::PathBuf, process, sync::Arc};
 
-pub struct GlobalState {}
+#[derive(FromArgs)]
+#[argh(description = "")]
+pub struct Args {
+    #[argh(option, description = "path to the config")]
+    config: PathBuf,
+}
+
+pub struct GlobalState {
+    pub config: Config,
+}
 
 #[tokio::main]
 async fn main() {
+    let args = argh::from_env::<Args>();
+
     simple_logger::init().unwrap();
     hello();
 
-    match run().await {
+    match run(args).await {
         Ok(()) => {
             process::exit(0);
         }
@@ -29,8 +44,9 @@ fn hello() {
     );
 }
 
-async fn run() -> anyhow::Result<()> {
-    let global_state = Arc::new(GlobalState {});
+async fn run(args: Args) -> anyhow::Result<()> {
+    let config = config::read_from(args.config).context("reading config")?;
+    let global_state = Arc::new(GlobalState { config });
 
     _ = tokio::join!(
         tokio::spawn(bot::run(global_state.clone())),

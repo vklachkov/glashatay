@@ -1,0 +1,13 @@
+{
+    "vk": {
+        "server": "https://api.vk.com/",
+        "language": "ru",
+        "service_key": "..."
+    },
+    "telegram": {
+        "bot_token": ""
+    },
+    "database": {
+        "path": "state.db"
+    }
+}
