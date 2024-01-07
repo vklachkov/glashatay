@@ -1,5 +1,6 @@
 mod bot;
 mod config;
+mod vk_api;
 mod vk_poll;
 
 use anyhow::Context;

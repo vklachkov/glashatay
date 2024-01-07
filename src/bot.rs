@@ -1,4 +1,3 @@
-use anyhow::Context;
 use std::sync::Arc;
 use teloxide::{
     dispatching::{
@@ -11,7 +10,7 @@ use teloxide::{
 };
 use url::Url;
 
-use crate::{config, GlobalState};
+use crate::GlobalState;
 
 type MyDialogue = Dialogue<BotState, InMemStorage<BotState>>;
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
@@ -20,7 +19,6 @@ type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
 #[command(rename_rule = "lowercase")]
 enum BotCommand {
     Start,
-    TestPost,
 }
 
 #[derive(Clone, Default)]
@@ -56,11 +54,7 @@ fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>>
     let command_handler = teloxide::filter_command::<BotCommand, _>()
         .branch(
             case![BotState::Start]
-                .branch(case![BotCommand::Start].endpoint(bot_start)))
-        .branch(
-            case![BotState::Active { channel_id, vk_id }]
-                .branch(case![BotCommand::TestPost].endpoint(bot_test_post)),
-        );
+                .branch(case![BotCommand::Start].endpoint(bot_start)));
 
     let message_handler = Update::filter_message()
         .branch(command_handler)
@@ -182,67 +176,4 @@ async fn receive_vk_url(
 async fn other(bot: Bot, msg: Message) -> HandlerResult {
     bot.send_message(msg.chat.id, "Всё настроено").await?;
     Ok(())
-}
-
-async fn bot_test_post(
-    bot: Bot,
-    global_state: Arc<GlobalState>,
-    (channel_id, vk_id): (ChatId, String),
-) -> HandlerResult {
-    let post = get_post(&global_state.config.vk, &vk_id)
-        .await
-        .context("requesting to vk api")?;
-
-    bot.send_message(channel_id, vk2md2(post)).await?;
-
-    Ok(())
-}
-
-async fn get_post(config: &config::Vk, vk_id: &str) -> anyhow::Result<String> {
-    const VERSION: &str = "5.137";
-    const METHOD: &str = "wall.get";
-
-    let url = Url::parse_with_params(
-        &format!("{base}method/{METHOD}", base = &config.server),
-        &[
-            ("v", VERSION),
-            ("lang", &config.language),
-            ("domain", vk_id),
-            ("offset", "0"),
-            ("count", "5"),
-        ],
-    )
-    .expect("url should be valid");
-
-    log::debug!("Url: {url}");
-
-    let client = reqwest::Client::new();
-
-    let response = client
-        .get(url)
-        .bearer_auth(&config.service_key)
-        .send()
-        .await
-        .context("executing wall.get")?;
-
-    let response = response
-        .text()
-        .await
-        .context("reading response from wall.get")?;
-
-    // log::debug!("Vk response: {response}");
-
-    let response = serde_json::from_str::<serde_json::Value>(&response)
-        .context("parsing response from wall.get")?;
-
-    let text = response["response"]["items"][0]["text"]
-        .as_str()
-        .unwrap_or("[Нет текста]")
-        .to_owned();
-
-    Ok(text)
-}
-
-fn vk2md2(post: String) -> String {
-    post
 }
