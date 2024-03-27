@@ -1,6 +1,6 @@
 use crate::{config, vk_api, GlobalState};
 use anyhow::Context;
-use std::{sync::Arc, fs};
+use std::{fs, sync::Arc};
 use url::Url;
 
 pub async fn run(global_state: Arc<GlobalState>) {

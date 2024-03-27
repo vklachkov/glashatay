@@ -1,0 +1,165 @@
+<mxfile host="app.diagrams.net" modified="2024-01-13T20:45:18.082Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36" etag="mImXWbXnz8Ft4r9pSiI_" version="22.1.18" type="device">
+  <diagram id="C5RBs43oDa-KdzZeNtuy" name="Page-1">
+    <mxGraphModel dx="2025" dy="1291" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-0" />
+        <mxCell id="WIyWlLk6GJQsqaUBKTNV-1" parent="WIyWlLk6GJQsqaUBKTNV-0" />
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-7" value="Добавить канал" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;spacing=16;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;fontSize=18;fontStyle=1" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;endArrow=block;endFill=0;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-8">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="105" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-8" value="Попросить переслать сообщение из Telegram чата" style="rounded=1;whiteSpace=wrap;html=1;spacing=8;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="10" y="80" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-15" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-9" target="iW_ekHkRJ6xB6FPirp64-14">
+          <mxGeometry y="-10" relative="1" as="geometry">
+            <mxPoint x="210" y="250" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="210" y="240" />
+              <mxPoint x="210" y="240" />
+            </Array>
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-9" value="Проверить, что бот может писать в телеграм канал" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;spacing=8;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="10" y="200" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=block;endFill=0;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-10" target="iW_ekHkRJ6xB6FPirp64-21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-10" value="Написать имя и id канала" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;spacing=8;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="10" y="300" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-11" value="" style="endArrow=block;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endFill=0;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-9" target="iW_ekHkRJ6xB6FPirp64-10">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="420" as="sourcePoint" />
+            <mxPoint x="450" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-14" value="Нет прав на запись" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;spacing=8;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="220" y="210" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=block;endFill=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-14" target="iW_ekHkRJ6xB6FPirp64-9">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="480" y="225" as="sourcePoint" />
+            <Array as="points">
+              <mxPoint x="275" y="180" />
+              <mxPoint x="105" y="180" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-42" value="Перепроверить" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" vertex="1" connectable="0" parent="iW_ekHkRJ6xB6FPirp64-19">
+          <mxGeometry x="-0.7818" relative="1" as="geometry">
+            <mxPoint y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=block;endFill=0;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-21" target="iW_ekHkRJ6xB6FPirp64-23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-21" value="Попросить ссылку на vk.com" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;spacing=8;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="10" y="360" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-29" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-23" target="iW_ekHkRJ6xB6FPirp64-26">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="220" y="440" />
+              <mxPoint x="220" y="440" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-32" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-23" target="iW_ekHkRJ6xB6FPirp64-27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-23" value="Проверить, что ссылка правильная" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;spacing=8;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="10" y="420" width="190" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;endArrow=block;endFill=0;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-26" target="iW_ekHkRJ6xB6FPirp64-21">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="275" y="380" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-26" value="Ссылка кривая" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;spacing=8;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="220" y="420" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-50" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;endArrow=block;endFill=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-27" target="iW_ekHkRJ6xB6FPirp64-43">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="105" y="590" />
+              <mxPoint x="105" y="590" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-27" value="Проверить, что ссылке можно читать посты" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;spacing=8;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="10" y="500" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-30" value="Нет прав на чтение стены" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;spacing=8;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="220" y="510" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-35" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=block;endFill=0;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-30" target="iW_ekHkRJ6xB6FPirp64-27">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="110" y="470" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="275" y="480" />
+              <mxPoint x="105" y="480" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-41" value="&lt;font data-font-src=&quot;https://fonts.googleapis.com/css?family=Fira+Code&quot;&gt;Перепроверить&lt;/font&gt;" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;" vertex="1" connectable="0" parent="iW_ekHkRJ6xB6FPirp64-35">
+          <mxGeometry x="-0.8288" y="1" relative="1" as="geometry">
+            <mxPoint x="1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-40" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-27" target="iW_ekHkRJ6xB6FPirp64-30">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="200" y="525" as="sourcePoint" />
+            <mxPoint x="220" y="525" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-45" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;endArrow=block;endFill=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-43" target="iW_ekHkRJ6xB6FPirp64-44">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="210" y="640" />
+              <mxPoint x="210" y="640" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-52" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;endArrow=block;endFill=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-43" target="iW_ekHkRJ6xB6FPirp64-51">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="105" y="690" />
+              <mxPoint x="105" y="690" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-43" value="Нужно ли синхронизировать аватарку и название канала?" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;spacing=8;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="10" y="600" width="190" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-47" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;startArrow=block;startFill=0;endArrow=block;endFill=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-44" target="iW_ekHkRJ6xB6FPirp64-46">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-44" value="Синхронизация" style="whiteSpace=wrap;html=1;rounded=1;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;dashed=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;spacing=8;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="220" y="610" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-53" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;exitX=0.5;exitY=1;exitDx=0;exitDy=0;endArrow=block;endFill=0;" edge="1" parent="WIyWlLk6GJQsqaUBKTNV-1" source="iW_ekHkRJ6xB6FPirp64-44" target="iW_ekHkRJ6xB6FPirp64-51">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="280" y="730" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-46" value="Ошибка, проверьте права" style="whiteSpace=wrap;html=1;rounded=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;spacing=8;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="370" y="610" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="iW_ekHkRJ6xB6FPirp64-51" value="Поздравить пользователя" style="whiteSpace=wrap;html=1;rounded=1;fontFamily=Fira Code;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DFira%2BCode;spacing=8;" vertex="1" parent="WIyWlLk6GJQsqaUBKTNV-1">
+          <mxGeometry x="10" y="700" width="190" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

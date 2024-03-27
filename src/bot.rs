@@ -1,3 +1,4 @@
+use crate::GlobalState;
 use std::sync::Arc;
 use teloxide::{
     dispatching::{
@@ -9,8 +10,6 @@ use teloxide::{
     types::{Chat, ChatKind, ChatPublic, ForwardedFrom},
 };
 use url::Url;
-
-use crate::GlobalState;
 
 type MyDialogue = Dialogue<BotState, InMemStorage<BotState>>;
 type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;

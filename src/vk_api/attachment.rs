@@ -13,6 +13,7 @@ pub enum Attachment {
 }
 
 // Хак из ишью https://github.com/serde-rs/serde/issues/1343.
+// TODO: Сохранять информацию о неподдерживаемом вложении.
 impl<'de> Deserialize<'de> for Attachment {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         #[derive(Deserialize)]
