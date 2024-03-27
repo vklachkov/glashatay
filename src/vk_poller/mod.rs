@@ -1,46 +1,69 @@
-use crate::{config, vk_api, GlobalState};
-use anyhow::{anyhow, bail, Context};
-use diesel::{Connection, SqliteConnection};
-use std::{fs, io::Write, path::Path, process, sync::Arc};
-use url::Url;
+use crate::{
+    db::Db,
+    domain::{ChannelEntryId, ChannelInfo},
+};
+use std::{sync::Arc, time::Duration};
 
-async fn get_post(config: &config::Vk, vk_id: &str) -> anyhow::Result<vk_api::Posts> {
-    const VERSION: &str = "5.137";
-    const METHOD: &str = "wall.get";
+pub struct VkPoller {
+    db: Arc<Db>,
+}
 
-    let url = Url::parse_with_params(
-        &format!("{base}method/{METHOD}", base = &config.server),
-        &[
-            ("v", VERSION),
-            ("lang", &config.language),
-            ("domain", vk_id),
-            ("offset", "0"),
-            ("count", "5"),
-        ],
-    )
-    .expect("url should be valid");
+impl VkPoller {
+    /// Читает список каналов из базы данных и запускает процесс опроса.
+    pub async fn new(db: Db) -> Self {
+        let this = Self { db: Arc::new(db) };
 
-    log::debug!("Url: {url}");
+        for (id, info) in this.db.get_channels().await {
+            this.spawn_poller(id, info);
+        }
 
-    let client = reqwest::Client::new();
+        this
+    }
 
-    let response = client
-        .get(url)
-        .bearer_auth(&config.service_key)
-        .send()
-        .await
-        .context("executing wall.get")?;
+    /// Сохраняет канал и запускает для него процесс опроса.
+    pub async fn create(&self, info: ChannelInfo) {
+        let id = self.db.new_channel(&info).await;
+        self.spawn_poller(id, info);
+    }
 
-    let response = response
-        .text()
-        .await
-        .context("reading response from wall.get")?;
+    fn spawn_poller(&self, database_id: ChannelEntryId, info: ChannelInfo) {
+        tokio::spawn({
+            let database = self.db.clone();
+            Self::poller(database, database_id, info)
+        });
+    }
 
-    // log::debug!("Vk response: {response}");
-    _ = fs::write("vk-response.json", &response);
+    async fn poller(database: Arc<Db>, id: ChannelEntryId, mut info: ChannelInfo) {
+        loop {
+            let should_poll = info
+                .last_poll_datetime
+                .map(|dt| info.poll_interval < (chrono::Utc::now() - dt))
+                .unwrap_or(true);
 
-    let response = serde_json::from_str::<vk_api::Response<vk_api::Posts>>(&response)
-        .context("parsing response from wall.get")?;
+            if !should_poll {
+                tokio::time::sleep(Duration::from_millis(1000)).await;
+                continue;
+            }
 
-    Ok(response.response)
+            if let Some(post_id) = info.vk_last_post {
+                /*
+                TODO:
+                1. Получить 5 постов со стены
+                2. Если в них есть пост с post_id, то взять посты до post_id.
+                3. Если нет, сохранить и запросить ещё 5, перейти к п. 2.
+                4. Полученный список постов преобразовать в формат Telegram.
+                5. Пройтись по каждому посту и отправить его.
+                FIXME: Какой должен быть формат поста?
+                */
+            } else {
+                /*
+                TODO:
+                1. Получить последний не закреплённый пост со стены.
+                2. Обновить info
+                */
+            }
+
+            database.update_channel(id, &info).await;
+        }
+    }
 }

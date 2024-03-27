@@ -1,18 +1,21 @@
+use crate::domain::{ChannelEntryId, ChannelInfo};
 use anyhow::{anyhow, bail, Context};
 use diesel::{Connection, SqliteConnection};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use std::{fs, io::Write, path::Path};
+use std::{fs, io::Write, path::Path, sync::Mutex};
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 pub struct Db {
-    conn: SqliteConnection,
+    conn: Mutex<SqliteConnection>,
 }
 
 impl Db {
     pub fn new<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+        let conn = Self::open_connection(path.as_ref())?;
+
         Ok(Self {
-            conn: Self::open_connection(path.as_ref())?,
+            conn: Mutex::new(conn),
         })
     }
 
@@ -73,5 +76,17 @@ impl Db {
         log::info!("Successfully backup database from '{dpath}' to '{dbackup_path}'");
 
         Ok(())
+    }
+
+    pub async fn get_channels(&self) -> Vec<(ChannelEntryId, ChannelInfo)> {
+        unimplemented!()
+    }
+
+    pub async fn new_channel(&self, info: &ChannelInfo) -> ChannelEntryId {
+        unimplemented!()
+    }
+
+    pub async fn update_channel(&self, id: ChannelEntryId, info: &ChannelInfo) {
+        unimplemented!()
     }
 }

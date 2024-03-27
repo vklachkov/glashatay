@@ -1,6 +1,7 @@
 mod bot;
 mod config;
 mod db;
+mod domain;
 mod vk_api;
 mod vk_poller;
 

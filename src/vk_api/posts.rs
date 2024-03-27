@@ -15,7 +15,7 @@ pub struct Posts {
 #[derive(Clone, Debug, Deserialize)]
 pub struct Post {
     /// Идентификатор записи.
-    pub id: i64,
+    pub id: PostId,
 
     /// Идентификатор автора записи (от чьего имени опубликована запись).
     pub from_id: i64,
@@ -51,6 +51,10 @@ pub struct Post {
     /// Информация о том, что запись закреплена.
     pub is_pinned: Option<u8>,
 }
+
+#[derive(Clone, Copy, Debug, Deserialize)]
+#[serde(transparent)]
+pub struct PostId(pub i64);
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Copyright {

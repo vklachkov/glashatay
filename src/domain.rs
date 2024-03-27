@@ -1,21 +1,25 @@
-use diesel::prelude::*;
+use crate::vk_api;
 
-#[derive(Queryable, Selectable)]
-#[diesel(table_name = crate::schema::channels)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub struct Channel {
+#[derive(Clone, Copy, Debug)]
+pub struct ChannelEntryId(pub i64);
+
+#[derive(Clone, Debug)]
+pub struct ChannelInfo {
     /// Идентификатор Telegram канала, куда будут отправляться посты.
-    pub tg_channel_id: i64,
+    pub tg_channel: TelegramChannelId,
 
     /// Идентификатор стены ВК, откуда будут читаться публикации.
     pub vk_public_id: String,
 
     /// Интервал проверки на новые записи в секундах.
-    pub poll_interval_secs: i32,
+    pub poll_interval: chrono::Duration,
 
     /// Время последней проверки на новые публикации.
-    pub last_poll_timestamp: Option<i64>,
+    pub last_poll_datetime: Option<chrono::DateTime<chrono::Utc>>,
 
     /// Идентификатор последней публикации на стене.
-    pub last_post_id: Option<i64>,
+    pub vk_last_post: Option<vk_api::PostId>,
 }
+
+#[derive(Clone, Copy, Debug)]
+pub struct TelegramChannelId(pub i64);
