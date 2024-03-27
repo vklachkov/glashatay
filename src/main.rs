@@ -11,8 +11,17 @@ use std::{env, path::PathBuf, process, sync::Arc};
 #[derive(FromArgs)]
 #[argh(description = "")]
 pub struct Args {
-    #[argh(option, description = "path to the config")]
+    /// path to config
+    #[argh(option)]
     config: PathBuf,
+
+    /// enable extra logs
+    #[argh(switch)]
+    verbose: bool,
+
+    /// enable trace logs
+    #[argh(switch)]
+    trace: bool,
 }
 
 pub struct GlobalState {
@@ -23,8 +32,8 @@ pub struct GlobalState {
 async fn main() {
     let args = argh::from_env::<Args>();
 
-    simple_logger::init().unwrap();
-    hello();
+    setup_logger(&args);
+    hello(&args);
 
     match run(args).await {
         Ok(()) => {
@@ -37,11 +46,36 @@ async fn main() {
     }
 }
 
-fn hello() {
+fn setup_logger(args: &Args) {
+    let level = if args.trace {
+        log::LevelFilter::Trace
+    } else if args.verbose {
+        log::LevelFilter::Debug
+    } else {
+        log::LevelFilter::Info
+    };
+
+    simple_logger::SimpleLogger::new()
+        .with_module_level("reqwest", log::LevelFilter::Off)
+        .with_level(level)
+        .init()
+        .unwrap()
+}
+
+fn hello(args: &Args) {
     log::info!(
-        "{name} version {version}",
-        name = env!("CARGO_BIN_NAME"),
-        version = env!("CARGO_PKG_VERSION")
+        "{bin} version {version}, commit {commit}, config from {config_path}, {verbose}",
+        bin = env!("CARGO_PKG_NAME"),
+        version = env!("CARGO_PKG_VERSION"),
+        commit = env!("GIT_COMMIT_HASH"),
+        config_path = args.config.display(),
+        verbose = if args.trace {
+            "trace enabled"
+        } else if args.verbose {
+            "verbose enabled"
+        } else {
+            "additional logs disabled"
+        },
     );
 }
 
