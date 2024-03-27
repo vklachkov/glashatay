@@ -37,7 +37,7 @@ pub fn read_from<P: AsRef<Path>>(path: P) -> anyhow::Result<Config> {
         .with_context(|| format!("reading file from {}", path.display()))?;
 
     let config: Config = toml::from_str(&raw)
-        .with_context(|| format!("deserialize file from {}", path.display()))?;
+        .with_context(|| format!("deserializing file from {}", path.display()))?;
 
     Ok(config)
 }

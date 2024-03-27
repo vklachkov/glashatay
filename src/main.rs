@@ -1,7 +1,8 @@
 mod bot;
 mod config;
+mod db;
 mod vk_api;
-mod vk_poll;
+mod vk_poller;
 
 use anyhow::Context;
 use argh::FromArgs;
@@ -85,7 +86,7 @@ async fn run(args: Args) -> anyhow::Result<()> {
 
     _ = tokio::join!(
         tokio::spawn(bot::run(global_state.clone())),
-        tokio::spawn(vk_poll::run(global_state)),
+        // tokio::spawn(vk_poll::run(global_state)),
     );
 
     Ok(())

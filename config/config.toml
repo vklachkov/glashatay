@@ -1,0 +1,10 @@
+[vk]
+server = "https://api.vk.com/"
+language = "ru"
+service_key = "INSERT VK API SERVICE KEY HERE"
+
+[telegram]
+bot_token = "INSERT TELEGRAM BOT TOKEN HERE"
+
+[database]
+path = "PATH TO DATABASE"
