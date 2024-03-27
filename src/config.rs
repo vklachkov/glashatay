@@ -36,9 +36,8 @@ pub fn read_from<P: AsRef<Path>>(path: P) -> anyhow::Result<Config> {
     let raw: String = fs::read_to_string(path)
         .with_context(|| format!("reading file from {}", path.display()))?;
 
-    let config: Config = serde_json::from_str(&raw)
-        .context("context")
-        .with_context(|| format!("deserialize json from {}", path.display()))?;
+    let config: Config = toml::from_str(&raw)
+        .with_context(|| format!("deserialize file from {}", path.display()))?;
 
     Ok(config)
 }
