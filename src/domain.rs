@@ -1,7 +1,7 @@
 use crate::vk_api;
 
 #[derive(Clone, Copy, Debug)]
-pub struct ChannelEntryId(pub i64);
+pub struct ChannelEntryId(pub i32);
 
 #[derive(Clone, Debug)]
 pub struct ChannelInfo {

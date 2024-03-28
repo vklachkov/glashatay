@@ -1,13 +1,23 @@
+mod models;
+mod schema;
+
 use crate::domain::{ChannelEntryId, ChannelInfo};
 use anyhow::{anyhow, bail, Context};
-use diesel::{Connection, SqliteConnection};
+use diesel::{
+    Connection, ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper, SqliteConnection,
+};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use std::{fs, io::Write, path::Path, sync::Mutex};
+use std::{
+    fs,
+    io::Write,
+    path::Path,
+    sync::{Arc, Mutex},
+};
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
 pub struct Db {
-    conn: Mutex<SqliteConnection>,
+    conn: Arc<Mutex<SqliteConnection>>,
 }
 
 impl Db {
@@ -15,7 +25,7 @@ impl Db {
         let conn = Self::open_connection(path.as_ref())?;
 
         Ok(Self {
-            conn: Mutex::new(conn),
+            conn: Arc::new(Mutex::new(conn)),
         })
     }
 
@@ -79,14 +89,64 @@ impl Db {
     }
 
     pub async fn get_channels(&self) -> Vec<(ChannelEntryId, ChannelInfo)> {
-        unimplemented!()
+        let conn = self.conn.clone();
+
+        tokio::task::spawn_blocking(move || {
+            use schema::channels;
+
+            let mut conn = conn.lock().expect("connection shouldn't be poisoned");
+
+            channels::table
+                .select(models::Channel::as_select())
+                .load(&mut *conn)
+                .expect("database operations should be successful")
+                .into_iter()
+                .map(|channel| (ChannelEntryId(channel.id), channel.into()))
+                .collect()
+        })
+        .await
+        .expect("database queries shouldn't panic")
     }
 
     pub async fn new_channel(&self, info: &ChannelInfo) -> ChannelEntryId {
-        unimplemented!()
+        let info: models::NewChannel = info.to_owned().into();
+        let conn = self.conn.clone();
+
+        tokio::task::spawn_blocking(move || {
+            use schema::channels;
+
+            let mut conn = conn.lock().expect("connection shouldn't be poisoned");
+
+            let id = diesel::insert_into(channels::table)
+                .values(info)
+                .returning(channels::id)
+                .get_result::<i32>(&mut *conn)
+                .expect("database operations should be successful");
+
+            ChannelEntryId(id)
+        })
+        .await
+        .expect("database queries shouldn't panic")
     }
 
     pub async fn update_channel(&self, id: ChannelEntryId, info: &ChannelInfo) {
-        unimplemented!()
+        let row_id: i32 = id.0;
+        let info: models::NewChannel = info.to_owned().into();
+
+        let conn = self.conn.clone();
+
+        tokio::task::spawn_blocking(move || {
+            use schema::channels;
+
+            let mut conn = conn.lock().expect("connection shouldn't be poisoned");
+
+            diesel::update(channels::table)
+                .filter(channels::id.eq(row_id))
+                .set(info)
+                .execute(&mut *conn)
+                .expect("database operations should be successful");
+        })
+        .await
+        .expect("database queries shouldn't panic")
     }
 }
