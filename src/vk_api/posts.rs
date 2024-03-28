@@ -104,3 +104,9 @@ pub struct Place {
     /// Адрес места.
     pub address: String,
 }
+
+impl Post {
+    pub fn is_pinned(&self) -> bool {
+        self.is_pinned.map(|flag| flag == 1).unwrap_or(false)
+    }
+}
