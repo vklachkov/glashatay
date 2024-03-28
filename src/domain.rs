@@ -23,3 +23,6 @@ pub struct ChannelInfo {
 
 #[derive(Clone, Copy, Debug)]
 pub struct TelegramChannelId(pub i64);
+
+#[derive(Clone, Copy, Debug)]
+pub struct TelegramPost {}

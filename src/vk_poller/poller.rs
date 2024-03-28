@@ -1,6 +1,6 @@
 use crate::{
     config, db,
-    domain::{ChannelEntryId, ChannelInfo},
+    domain::{ChannelEntryId, ChannelInfo, TelegramPost},
     vk_api,
 };
 use anyhow::Context;
@@ -44,20 +44,70 @@ impl VkPoller {
 
             log::debug!("Time to poll VK wall '{}'...", self.info.vk_public_id);
 
-            if let Some(post_id) = self.info.vk_last_post {
-                /*
-                TODO:
-                1. Получить 5 постов со стены
-                2. Если в них есть пост с post_id, то взять посты до post_id.
-                3. Если нет, сохранить и запросить ещё 5, перейти к п. 2.
-                4. Полученный список постов преобразовать в формат Telegram.
-                5. Пройтись по каждому посту и отправить его.
-                FIXME: Какой должен быть формат поста?
-                */
+            if let Some(last_poll_datetime) = self.info.last_poll_datetime {
+                self.poll_new_posts(last_poll_datetime).await;
             } else {
                 self.first_poll().await;
             }
         }
+    }
+
+    async fn poll_new_posts(&mut self, last_poll_datetime: chrono::DateTime<chrono::Utc>) {
+        match self.get_new_posts(last_poll_datetime).await {
+            Ok(posts) => {
+                self.convert_vk_posts_to_telegram_format(posts).await;
+                todo!("Send converted posts");
+            }
+            Err(err) => {
+                log::warn!(
+                    "Failed to fetch latest post from VK wall '{id}': {err:#}",
+                    id = self.info.vk_public_id
+                );
+            }
+        }
+    }
+
+    async fn get_new_posts(
+        &mut self,
+        last_poll_datetime: chrono::DateTime<chrono::Utc>,
+    ) -> anyhow::Result<Vec<vk_api::Post>> {
+        let mut offset = 0;
+        let count = 5;
+
+        let mut new_posts = Vec::<vk_api::Post>::new();
+        'fetch: loop {
+            let posts = self
+                .get_posts(offset, count)
+                .await
+                .context("fetching posts from VK")?;
+
+            if posts.is_empty() {
+                break;
+            }
+
+            for post in posts {
+                if post.is_pinned() {
+                    continue;
+                }
+
+                if post.date <= last_poll_datetime {
+                    break 'fetch;
+                }
+
+                new_posts.push(post);
+            }
+
+            offset += count;
+        }
+
+        Ok(new_posts)
+    }
+
+    async fn convert_vk_posts_to_telegram_format(
+        &self,
+        posts: Vec<vk_api::Post>,
+    ) -> Vec<TelegramPost> {
+        unimplemented!()
     }
 
     async fn first_poll(&mut self) {
@@ -65,8 +115,8 @@ impl VkPoller {
 
         match self.get_first_non_pinned_post_id().await {
             Ok(Some(post_id)) => {
-                log::debug!("Successfully fetch non pinned post {post_id:?} from VK wall '{id}'");
-                self.info.vk_last_post = Some(post_id);
+                let post_id = post_id.0;
+                log::debug!("Successfully fetch non pinned post {post_id} from VK wall '{id}'");
             }
             Ok(None) => {
                 log::info!("No posts on VK wall '{id}'");
@@ -87,7 +137,7 @@ impl VkPoller {
 
         loop {
             let posts = self
-                .get_posts(&self.info.vk_public_id, offset, count)
+                .get_posts(offset, count)
                 .await
                 .context("fetching posts from VK")?;
 
@@ -103,12 +153,7 @@ impl VkPoller {
         }
     }
 
-    async fn get_posts(
-        &self,
-        vk_id: &str,
-        offset: usize,
-        count: usize,
-    ) -> anyhow::Result<Vec<vk_api::Post>> {
+    async fn get_posts(&self, offset: usize, count: usize) -> anyhow::Result<Vec<vk_api::Post>> {
         const VERSION: &str = "5.137";
         const METHOD: &str = "wall.get";
 
@@ -119,7 +164,7 @@ impl VkPoller {
             &[
                 ("v", VERSION),
                 ("lang", &config.language),
-                ("domain", vk_id),
+                ("domain", &self.info.vk_public_id),
                 ("offset", &offset.to_string()),
                 ("count", &count.to_string()),
             ],
