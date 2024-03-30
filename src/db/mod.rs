@@ -16,6 +16,7 @@ use std::{
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations");
 
+#[derive(Clone)]
 pub struct Db {
     conn: Arc<Mutex<SqliteConnection>>,
 }

@@ -1,32 +1,45 @@
 mod poller;
 
 use crate::{
-    config,
+    config::Config,
     db::Db,
     domain::{ChannelEntryId, ChannelInfo},
 };
+use poller::VkPoller;
 use std::sync::Arc;
+use tokio_util::{sync::CancellationToken, task::TaskTracker};
 
-use self::poller::VkPoller;
-
+#[derive(Clone)]
 pub struct VkPollManager {
-    config: Arc<config::Config>,
-    db: Arc<Db>,
+    config: Arc<Config>,
+    db: Db,
+    bot: teloxide::Bot,
+    tracker: TaskTracker,
+    cancellation_token: CancellationToken,
 }
 
 impl VkPollManager {
     /// Читает список каналов из базы данных и запускает процесс опроса.
-    pub async fn new(config: config::Config, db: Db) -> Self {
-        let this = Self {
-            config: Arc::new(config),
-            db: Arc::new(db),
-        };
-
-        for (id, info) in this.db.get_channels().await {
-            this.spawn_poller(id, info);
+    pub fn new(
+        config: Arc<Config>,
+        db: Db,
+        bot: teloxide::Bot,
+        tracker: TaskTracker,
+        token: CancellationToken,
+    ) -> Self {
+        Self {
+            config,
+            db,
+            bot,
+            tracker,
+            cancellation_token: token,
         }
+    }
 
-        this
+    pub async fn run(self) {
+        for (id, info) in self.db.get_channels().await {
+            self.spawn_poller(id, info);
+        }
     }
 
     /// Сохраняет канал и запускает для него процесс опроса.
@@ -36,6 +49,16 @@ impl VkPollManager {
     }
 
     fn spawn_poller(&self, database_id: ChannelEntryId, info: ChannelInfo) {
-        tokio::spawn(VkPoller::new(self.config.clone(), self.db.clone(), database_id, info).run());
+        self.tracker.spawn(
+            VkPoller::new(
+                self.config.clone(),
+                self.db.clone(),
+                database_id,
+                info,
+                self.bot.clone(),
+                self.cancellation_token.clone(),
+            )
+            .run(),
+        );
     }
 }

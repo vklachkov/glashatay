@@ -5,27 +5,35 @@ use crate::{
 };
 use anyhow::Context;
 use std::{sync::Arc, time::Duration};
+use tokio::time::sleep;
+use tokio_util::sync::CancellationToken;
 use url::Url;
 
 pub struct VkPoller {
     config: Arc<config::Config>,
-    db: Arc<db::Db>,
+    db: db::Db,
     id: ChannelEntryId,
     info: ChannelInfo,
+    bot: teloxide::Bot,
+    cancellation_token: CancellationToken,
 }
 
 impl VkPoller {
     pub fn new(
         config: Arc<config::Config>,
-        db: Arc<db::Db>,
+        db: db::Db,
         id: ChannelEntryId,
         info: ChannelInfo,
+        bot: teloxide::Bot,
+        cancellation_token: CancellationToken,
     ) -> Self {
         Self {
             config,
             db,
             id,
             info,
+            bot,
+            cancellation_token,
         }
     }
 
@@ -38,8 +46,10 @@ impl VkPoller {
                 .unwrap_or(true);
 
             if !should_poll {
-                tokio::time::sleep(Duration::from_millis(1000)).await;
-                continue;
+                tokio::select! {
+                    _ = self.cancellation_token.cancelled() => { break; },
+                    _ = sleep(Duration::from_millis(1000)) => { continue; }
+                }
             }
 
             log::debug!("Time to poll VK wall '{}'...", self.info.vk_public_id);
@@ -48,23 +58,54 @@ impl VkPoller {
                 self.poll_new_posts(last_poll_datetime).await;
             } else {
                 self.first_poll().await;
+                tokio::time::sleep(Duration::from_millis(5000)).await;
+            }
+
+            if self.cancellation_token.is_cancelled() {
+                break;
             }
         }
     }
 
     async fn poll_new_posts(&mut self, last_poll_datetime: chrono::DateTime<chrono::Utc>) {
-        match self.get_new_posts(last_poll_datetime).await {
-            Ok(posts) => {
-                self.convert_vk_posts_to_telegram_format(posts).await;
-                todo!("Send converted posts");
-            }
+        let posts = match self.get_new_posts(last_poll_datetime).await {
+            Ok(posts) => posts,
             Err(err) => {
-                log::warn!(
-                    "Failed to fetch latest post from VK wall '{id}': {err:#}",
+                return log::warn!(
+                    "Failed to fetch new posts from VK wall '{id}': {err:#}",
                     id = self.info.vk_public_id
                 );
             }
+        };
+
+        if posts.is_empty() {
+            self.info.last_poll_datetime = Some(chrono::Utc::now());
+            self.db.update_channel(self.id, &self.info).await;
+            return;
         }
+
+        let mut last_poll_datetime = last_poll_datetime;
+
+        for post in posts {
+            let post_id = post.id.0;
+            let post_datetime = post.date;
+
+            let post = self.convert_vk_to_tg(post).await;
+
+            match crate::bot::send_post(&self.bot, post).await {
+                Ok(()) => {
+                    log::info!("Successfully send post #{post_id} to the Telegram");
+                    last_poll_datetime = post_datetime;
+                }
+                Err(err) => {
+                    log::warn!("Failed to send post #{post_id} to the Telegram: {err:#}");
+                    break;
+                }
+            }
+        }
+
+        self.info.last_poll_datetime = Some(last_poll_datetime);
+        self.db.update_channel(self.id, &self.info).await;
     }
 
     async fn get_new_posts(
@@ -81,6 +122,8 @@ impl VkPoller {
                 .await
                 .context("fetching posts from VK")?;
 
+            log::debug!("Posts: {posts:?}");
+
             if posts.is_empty() {
                 break;
             }
@@ -91,6 +134,8 @@ impl VkPoller {
                 }
 
                 if post.date <= last_poll_datetime {
+                    dbg!(post.date);
+                    dbg!(last_poll_datetime);
                     break 'fetch;
                 }
 
@@ -103,11 +148,11 @@ impl VkPoller {
         Ok(new_posts)
     }
 
-    async fn convert_vk_posts_to_telegram_format(
-        &self,
-        posts: Vec<vk_api::Post>,
-    ) -> Vec<TelegramPost> {
-        unimplemented!()
+    async fn convert_vk_to_tg(&self, post: vk_api::Post) -> TelegramPost {
+        TelegramPost {
+            channel_id: self.info.tg_channel,
+            text: post.text,
+        }
     }
 
     async fn first_poll(&mut self) {
@@ -186,7 +231,7 @@ impl VkPoller {
             .context("reading response from wall.get")?;
 
         let response = serde_json::from_str::<vk_api::Response<vk_api::Posts>>(&response)
-            .context("parsing response from wall.get")?;
+            .with_context(|| format!("parsing response '{response}' from wall.get"))?;
 
         Ok(response.response.items)
     }

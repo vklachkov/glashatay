@@ -30,14 +30,16 @@ pub struct Database {
     pub path: PathBuf,
 }
 
-pub fn read_from<P: AsRef<Path>>(path: P) -> anyhow::Result<Config> {
-    let path = path.as_ref();
+impl Config {
+    pub fn read_from<P: AsRef<Path>>(path: P) -> anyhow::Result<Config> {
+        let path = path.as_ref();
 
-    let raw: String = fs::read_to_string(path)
-        .with_context(|| format!("reading file from {}", path.display()))?;
+        let raw: String = fs::read_to_string(path)
+            .with_context(|| format!("reading file from {}", path.display()))?;
 
-    let config: Config = toml::from_str(&raw)
-        .with_context(|| format!("deserializing file from {}", path.display()))?;
+        let config: Config = toml::from_str(&raw)
+            .with_context(|| format!("deserializing file from {}", path.display()))?;
 
-    Ok(config)
+        Ok(config)
+    }
 }

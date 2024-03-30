@@ -7,8 +7,9 @@ mod vk_poller;
 
 use anyhow::Context;
 use argh::FromArgs;
-use config::Config;
 use std::{env, path::PathBuf, process, sync::Arc};
+use tokio::signal::unix::{signal, SignalKind};
+use tokio_util::{sync::CancellationToken, task::TaskTracker};
 
 #[derive(FromArgs)]
 #[argh(description = "")]
@@ -24,10 +25,6 @@ pub struct Args {
     /// enable trace logs
     #[argh(switch)]
     trace: bool,
-}
-
-pub struct GlobalState {
-    pub config: Config,
 }
 
 #[tokio::main]
@@ -82,13 +79,53 @@ fn hello(args: &Args) {
 }
 
 async fn run(args: Args) -> anyhow::Result<()> {
-    let config = config::read_from(args.config).context("reading config")?;
-    let global_state = Arc::new(GlobalState { config });
+    let config = config::Config::read_from(args.config)
+        .map(Arc::new)
+        .context("reading config")?;
 
-    _ = tokio::join!(
-        tokio::spawn(bot::run(global_state.clone())),
-        // tokio::spawn(vk_poll::run(global_state)),
+    let db = db::Db::new(&config.database.path).context("connecting to database")?;
+
+    let tracker = TaskTracker::new();
+    let cancellation_token = CancellationToken::new();
+
+    let bot = teloxide::Bot::new(&config.telegram.bot_token);
+
+    let poller_manager = vk_poller::VkPollManager::new(
+        config,
+        db,
+        bot.clone(),
+        tracker.clone(),
+        cancellation_token.clone(),
     );
 
+    tracker.spawn(bot::run_dialogue(
+        bot.clone(),
+        poller_manager.clone(),
+        cancellation_token.clone(),
+    ));
+
+    tracker.spawn(poller_manager.run());
+
+    tracker.spawn(signal_handler(tracker.clone(), cancellation_token.clone()));
+
+    tracker.wait().await;
+
     Ok(())
+}
+
+async fn signal_handler(tracker: TaskTracker, token: CancellationToken) {
+    let mut sigint = signal(SignalKind::interrupt()).unwrap();
+    let mut sigterm = signal(SignalKind::terminate()).unwrap();
+
+    tokio::select! {
+        _ = sigint.recv() => {
+            log::debug!("SIGINT received");
+        },
+        _ = sigterm.recv() => {
+            log::debug!("SIGTERM received");
+        },
+    }
+
+    tracker.close();
+    token.cancel();
 }

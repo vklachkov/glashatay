@@ -1,9 +1,11 @@
-use crate::GlobalState;
-use std::sync::Arc;
+use crate::{
+    domain::{ChannelInfo, TelegramChannelId},
+    vk_poller,
+};
 use teloxide::{
     dispatching::{
         dialogue::{self, InMemStorage},
-        UpdateHandler,
+        ShutdownToken, UpdateHandler,
     },
     macros::BotCommands,
     prelude::*,
@@ -34,16 +36,20 @@ pub enum BotState {
     },
 }
 
-pub async fn run(global_state: Arc<GlobalState>) {
-    let bot = Bot::new(&global_state.config.telegram.bot_token);
+pub async fn start(bot: Bot, poller: vk_poller::VkPollManager) -> ShutdownToken {
     let bot_state = InMemStorage::<BotState>::new();
 
-    Dispatcher::builder(bot, schema())
-        .dependencies(dptree::deps![bot_state, global_state])
-        .enable_ctrlc_handler()
-        .build()
-        .dispatch()
-        .await;
+    let mut dispatcher = Dispatcher::builder(bot, schema())
+        .dependencies(dptree::deps![bot_state, poller])
+        .build();
+
+    let token = dispatcher.shutdown_token();
+
+    tokio::spawn(async move {
+        dispatcher.dispatch().await;
+    });
+
+    token
 }
 
 #[rustfmt::skip]
@@ -132,6 +138,7 @@ async fn receive_vk_url(
     dialogue: MyDialogue,
     posts_channel_id: ChatId,
     msg: Message,
+    poller: vk_poller::VkPollManager,
 ) -> HandlerResult {
     let Some(text) = msg.text() else {
         bot.send_message(
@@ -161,6 +168,16 @@ async fn receive_vk_url(
         format!("Отлично! Посты будут репоститься из vk.com/{id} в {posts_channel_id}"),
     )
     .await?;
+
+    poller
+        .create(ChannelInfo {
+            tg_channel: TelegramChannelId(posts_channel_id.0),
+            vk_public_id: id.clone(),
+            poll_interval: chrono::Duration::seconds(2),
+            last_poll_datetime: None,
+            vk_last_post: None,
+        })
+        .await;
 
     dialogue
         .update(BotState::Active {
