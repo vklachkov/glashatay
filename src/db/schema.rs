@@ -8,5 +8,6 @@ diesel::table! {
         poll_interval_secs -> Integer,
         last_poll_timestamp -> Nullable<BigInt>,
         last_post_id -> Nullable<BigInt>,
+        last_post_timestamp -> Nullable<BigInt>,
     }
 }

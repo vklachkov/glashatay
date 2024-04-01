@@ -4,6 +4,7 @@ use crate::{
     vk_api,
 };
 use anyhow::Context;
+use chrono::Utc;
 use std::{sync::Arc, time::Duration};
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
@@ -38,7 +39,7 @@ impl VkPoller {
     }
 
     pub async fn run(mut self) {
-        loop {
+        while !self.cancellation_token.is_cancelled() {
             let should_poll = self
                 .info
                 .last_poll_datetime
@@ -48,27 +49,25 @@ impl VkPoller {
             if !should_poll {
                 tokio::select! {
                     _ = self.cancellation_token.cancelled() => { break; },
-                    _ = sleep(Duration::from_millis(1000)) => { continue; }
+                    _ = sleep(Duration::from_millis(1000)) => { continue; },
                 }
             }
 
             log::debug!("Time to poll VK wall '{}'...", self.info.vk_public_id);
 
-            if let Some(last_poll_datetime) = self.info.last_poll_datetime {
-                self.poll_new_posts(last_poll_datetime).await;
+            if let Some(last_post_datetime) = self.info.last_post_datetime {
+                self.poll_new_posts(last_post_datetime).await;
             } else {
                 self.first_poll().await;
-                tokio::time::sleep(Duration::from_millis(5000)).await;
             }
 
-            if self.cancellation_token.is_cancelled() {
-                break;
-            }
+            self.info.last_poll_datetime = Some(Utc::now());
+            self.db.update_channel(self.id, &self.info).await;
         }
     }
 
-    async fn poll_new_posts(&mut self, last_poll_datetime: chrono::DateTime<chrono::Utc>) {
-        let posts = match self.get_new_posts(last_poll_datetime).await {
+    async fn poll_new_posts(&mut self, last_post_datetime: chrono::DateTime<chrono::Utc>) {
+        let posts = match self.get_new_posts(last_post_datetime).await {
             Ok(posts) => posts,
             Err(err) => {
                 return log::warn!(
@@ -79,14 +78,10 @@ impl VkPoller {
         };
 
         if posts.is_empty() {
-            self.info.last_poll_datetime = Some(chrono::Utc::now());
-            self.db.update_channel(self.id, &self.info).await;
             return;
         }
 
-        let mut last_poll_datetime = last_poll_datetime;
-
-        for post in posts {
+        for post in posts.into_iter().rev() {
             let post_id = post.id.0;
             let post_datetime = post.date;
 
@@ -95,7 +90,9 @@ impl VkPoller {
             match crate::bot::send_post(&self.bot, post).await {
                 Ok(()) => {
                     log::info!("Successfully send post #{post_id} to the Telegram");
-                    last_poll_datetime = post_datetime;
+
+                    self.info.last_post_datetime = Some(post_datetime);
+                    self.db.update_channel(self.id, &self.info).await;
                 }
                 Err(err) => {
                     log::warn!("Failed to send post #{post_id} to the Telegram: {err:#}");
@@ -103,14 +100,11 @@ impl VkPoller {
                 }
             }
         }
-
-        self.info.last_poll_datetime = Some(last_poll_datetime);
-        self.db.update_channel(self.id, &self.info).await;
     }
 
     async fn get_new_posts(
         &mut self,
-        last_poll_datetime: chrono::DateTime<chrono::Utc>,
+        last_post_datetime: chrono::DateTime<chrono::Utc>,
     ) -> anyhow::Result<Vec<vk_api::Post>> {
         let mut offset = 0;
         let count = 5;
@@ -133,9 +127,7 @@ impl VkPoller {
                     continue;
                 }
 
-                if post.date <= last_poll_datetime {
-                    dbg!(post.date);
-                    dbg!(last_poll_datetime);
+                if post.date <= last_post_datetime {
                     break 'fetch;
                 }
 
@@ -159,24 +151,23 @@ impl VkPoller {
         let id = &self.info.vk_public_id;
 
         match self.get_first_non_pinned_post_id().await {
-            Ok(Some(post_id)) => {
-                let post_id = post_id.0;
+            Ok(Some(post)) => {
+                let post_id = post.id.0;
                 log::debug!("Successfully fetch non pinned post {post_id} from VK wall '{id}'");
+
+                self.info.last_post_datetime = Some(post.date);
+                self.db.update_channel(self.id, &self.info).await;
             }
             Ok(None) => {
                 log::info!("No posts on VK wall '{id}'");
             }
             Err(err) => {
-                return log::warn!("Failed to fetch latest post from VK wall '{id}': {err:#}");
+                log::warn!("Failed to fetch latest post from VK wall '{id}': {err:#}");
             }
         }
-
-        self.info.last_poll_datetime = Some(chrono::Utc::now());
-
-        self.db.update_channel(self.id, &self.info).await;
     }
 
-    async fn get_first_non_pinned_post_id(&self) -> anyhow::Result<Option<vk_api::PostId>> {
+    async fn get_first_non_pinned_post_id(&self) -> anyhow::Result<Option<vk_api::Post>> {
         let mut offset = 0;
         let count = 5;
 
@@ -191,7 +182,7 @@ impl VkPoller {
             }
 
             if let Some(post) = posts.into_iter().find(|post| !post.is_pinned()) {
-                return Ok(Some(post.id));
+                return Ok(Some(post));
             } else {
                 offset += count;
             }

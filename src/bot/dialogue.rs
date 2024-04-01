@@ -175,7 +175,7 @@ async fn receive_vk_url(
             vk_public_id: id.clone(),
             poll_interval: chrono::Duration::seconds(2),
             last_poll_datetime: None,
-            vk_last_post: None,
+            last_post_datetime: None,
         })
         .await;
 

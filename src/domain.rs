@@ -1,5 +1,3 @@
-use crate::vk_api;
-
 #[derive(Clone, Copy, Debug)]
 pub struct ChannelEntryId(pub i32);
 
@@ -17,8 +15,8 @@ pub struct ChannelInfo {
     /// Время последней проверки на новые публикации.
     pub last_poll_datetime: Option<chrono::DateTime<chrono::Utc>>,
 
-    /// Идентификатор последней публикации на стене.
-    pub vk_last_post: Option<vk_api::PostId>,
+    /// Время публикации последней записи на стене.
+    pub last_post_datetime: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 #[derive(Clone, Copy, Debug)]

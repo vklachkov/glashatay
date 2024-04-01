@@ -1,4 +1,4 @@
-use crate::{domain, vk_api};
+use crate::domain;
 use diesel::prelude::*;
 
 #[derive(Insertable, AsChangeset)]
@@ -17,8 +17,8 @@ pub struct NewChannel {
     /// Время последней проверки на новые публикации.
     pub last_poll_timestamp: Option<i64>,
 
-    /// Идентификатор последней публикации на стене.
-    pub last_post_id: Option<i64>,
+    /// Время публикации последней записи на стене.
+    pub last_post_timestamp: Option<i64>,
 }
 
 impl From<domain::ChannelInfo> for NewChannel {
@@ -32,7 +32,7 @@ impl From<domain::ChannelInfo> for NewChannel {
                 .try_into()
                 .unwrap_or(i32::MAX),
             last_poll_timestamp: info.last_poll_datetime.map(|dt| dt.timestamp()),
-            last_post_id: info.vk_last_post.map(|post_id| post_id.0),
+            last_post_timestamp: info.last_post_datetime.map(|dt| dt.timestamp()),
         }
     }
 }
@@ -55,8 +55,8 @@ pub struct Channel {
     /// Время последней проверки на новые публикации.
     pub last_poll_timestamp: Option<i64>,
 
-    /// Идентификатор последней публикации на стене.
-    pub last_post_id: Option<i64>,
+    /// Время публикации последней записи на стене.
+    pub last_post_timestamp: Option<i64>,
 }
 
 impl From<Channel> for domain::ChannelInfo {
@@ -69,7 +69,10 @@ impl From<Channel> for domain::ChannelInfo {
                 chrono::DateTime::from_timestamp(ts, 0)
                     .expect("last_poll_timestamp should be correct timestamp")
             }),
-            vk_last_post: ch.last_post_id.map(vk_api::PostId),
+            last_post_datetime: ch.last_post_timestamp.map(|ts| {
+                chrono::DateTime::from_timestamp(ts, 0)
+                    .expect("last_post_timestamp should be correct timestamp")
+            }),
         }
     }
 }
