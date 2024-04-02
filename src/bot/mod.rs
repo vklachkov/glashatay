@@ -16,9 +16,17 @@ pub async fn run_dialogue(
 }
 
 pub async fn send_post(bot: &teloxide::Bot, post: TelegramPost) -> anyhow::Result<()> {
-    use teloxide::{requests::Requester, types::ChatId};
+    use teloxide::{
+        requests::Requester,
+        types::{ChatId, ParseMode},
+    };
 
-    bot.send_message(ChatId(post.channel_id.0), post.text)
+    let mut message = bot.send_message(ChatId(post.channel_id.0), post.text);
+    message.message_thread_id = None;
+    message.parse_mode = Some(ParseMode::MarkdownV2);
+    message.disable_web_page_preview = Some(true);
+
+    message
         .await
         .with_context(|| format!("sending text to channel {}", post.channel_id.0))?;
 

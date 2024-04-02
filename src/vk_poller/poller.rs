@@ -10,6 +10,8 @@ use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use url::Url;
 
+use super::converter;
+
 pub struct VkPoller {
     config: Arc<config::Config>,
     db: db::Db,
@@ -141,10 +143,7 @@ impl VkPoller {
     }
 
     async fn convert_vk_to_tg(&self, post: vk_api::Post) -> TelegramPost {
-        TelegramPost {
-            channel_id: self.info.tg_channel,
-            text: post.text,
-        }
+        converter::vk_to_tg(self.info.tg_channel, post).await
     }
 
     async fn first_poll(&mut self) {
