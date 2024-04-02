@@ -1,4 +1,4 @@
-pub use super::attachment::Attachment;
+pub use super::attachment::*;
 
 use chrono::{serde::ts_seconds, DateTime, Utc};
 use serde::Deserialize;

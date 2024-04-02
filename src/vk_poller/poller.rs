@@ -5,7 +5,7 @@ use crate::{
 };
 use anyhow::Context;
 use chrono::Utc;
-use std::{sync::Arc, time::Duration};
+use std::{fs, sync::Arc, time::Duration};
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use url::Url;
@@ -87,7 +87,13 @@ impl VkPoller {
             let post_id = post.id.0;
             let post_datetime = post.date;
 
-            let post = self.convert_vk_to_tg(post).await;
+            let post = match self.convert_vk_to_tg(post).await {
+                Ok(post) => post,
+                Err(err) => {
+                    log::warn!("Failed to convert VK post #{post_id}: {err:#}");
+                    break;
+                }
+            };
 
             match crate::bot::send_post(&self.bot, post).await {
                 Ok(()) => {
@@ -142,8 +148,10 @@ impl VkPoller {
         Ok(new_posts)
     }
 
-    async fn convert_vk_to_tg(&self, post: vk_api::Post) -> TelegramPost {
-        converter::vk_to_tg(self.info.tg_channel, post).await
+    async fn convert_vk_to_tg(&self, post: vk_api::Post) -> anyhow::Result<TelegramPost> {
+        converter::vk_to_tg(self.info.tg_channel, post)
+            .await
+            .context("converting vk post to telegram format")
     }
 
     async fn first_poll(&mut self) {
