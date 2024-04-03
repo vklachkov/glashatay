@@ -28,6 +28,7 @@ pub struct TelegramPost {
     pub photos: Vec<TelegramPostPhoto>,
 }
 
+#[derive(Clone)]
 pub struct TelegramPostPhoto {
     pub bytes: Vec<u8>,
     pub description: String,
