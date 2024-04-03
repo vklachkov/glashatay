@@ -30,6 +30,10 @@ pub async fn send_post(bot: &Bot, post: TelegramPost) -> anyhow::Result<()> {
 }
 
 async fn send_text(bot: &Bot, chat_id: ChatId, text: String) -> anyhow::Result<()> {
+    if text.is_empty() {
+        return Ok(());
+    };
+
     let mut message = bot.send_message(chat_id, text);
     message.parse_mode = Some(ParseMode::MarkdownV2);
     message.disable_web_page_preview = Some(true);
