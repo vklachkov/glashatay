@@ -45,6 +45,7 @@ pub async fn vk_to_tg(
         channel_id,
         text: vk_format_to_markdown(&post.text),
         photos,
+        is_pinned: post.is_pinned == Some(1),
     })
 }
 

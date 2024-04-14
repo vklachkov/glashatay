@@ -131,7 +131,7 @@ impl VkPoller {
             }
 
             for post in posts {
-                if post.is_pinned() {
+                if post.is_pinned() && post.date <= last_post_datetime {
                     continue;
                 }
 
@@ -144,6 +144,10 @@ impl VkPoller {
 
             offset += count;
         }
+
+        // Первыми в списке идут новые закреплённые посты.
+        // Чтобы не нарушить хронологический порядок отправки, сортируем по дате.
+        new_posts.sort_by(|a, b| b.date.cmp(&a.date));
 
         Ok(new_posts)
     }

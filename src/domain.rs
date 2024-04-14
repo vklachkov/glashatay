@@ -26,6 +26,7 @@ pub struct TelegramPost {
     pub channel_id: TelegramChannelId,
     pub text: String,
     pub photos: Vec<TelegramPostPhoto>,
+    pub is_pinned: bool,
 }
 
 #[derive(Clone)]
