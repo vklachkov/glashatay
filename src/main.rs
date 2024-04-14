@@ -29,6 +29,8 @@ pub struct Args {
 
 #[tokio::main]
 async fn main() {
+    setup_panic_hook();
+
     let args = argh::from_env::<Args>();
 
     setup_logger(&args);
@@ -43,6 +45,13 @@ async fn main() {
             process::exit(1);
         }
     }
+}
+
+fn setup_panic_hook() {
+    std::panic::set_hook(Box::new(move |info| {
+        log::error!("Panic! Service {info}");
+        std::process::exit(1);
+    }));
 }
 
 fn setup_logger(args: &Args) {
