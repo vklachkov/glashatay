@@ -5,8 +5,8 @@ use crate::{
 };
 use anyhow::Context;
 use chrono::Utc;
-use std::{fs, sync::Arc, time::Duration};
-use tokio::time::sleep;
+use std::{sync::Arc, time::Duration};
+use tokio::{fs, time::sleep};
 use tokio_util::sync::CancellationToken;
 use url::Url;
 
@@ -232,9 +232,38 @@ impl VkPoller {
             .await
             .context("reading response from wall.get")?;
 
+        self.dump_response(&response).await;
+
         let response = serde_json::from_str::<vk_api::Response<vk_api::Posts>>(&response)
             .with_context(|| format!("parsing response '{response}' from wall.get"))?;
 
         Ok(response.response.items)
+    }
+
+    async fn dump_response(&self, response: &str) {
+        let Some(ref debug_config) = self.config.vk.debug else {
+            return;
+        };
+
+        if !debug_config.save_responses {
+            return;
+        }
+
+        let dump_path = debug_config.responses_dir_path.join(format!(
+            "vk-response-{}.json",
+            Utc::now().timestamp_millis()
+        ));
+
+        match fs::write(&dump_path, &response).await {
+            Ok(()) => log::debug!(
+                "Successfully save vk response into file '{path}'",
+                path = dump_path.display(),
+            ),
+            Err(err) => log::error!(
+                "Failed to save vk response into file '{path}': {err}",
+                path = dump_path.display(),
+                err = err,
+            ),
+        }
     }
 }

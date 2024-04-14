@@ -18,6 +18,13 @@ pub struct Vk {
     pub server: Url,
     pub language: String,
     pub service_key: String,
+    pub debug: Option<VkDebug>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct VkDebug {
+    pub save_responses: bool,
+    pub responses_dir_path: PathBuf,
 }
 
 #[derive(Debug, Clone, Deserialize)]
