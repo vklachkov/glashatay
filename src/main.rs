@@ -67,6 +67,7 @@ fn setup_logger(args: &Args) {
 
     simple_logger::SimpleLogger::new()
         .with_module_level("reqwest", log::LevelFilter::Off)
+        .with_module_level("hyper", log::LevelFilter::Off)
         .with_level(level)
         .init()
         .unwrap()
