@@ -1,3 +1,4 @@
+use super::converter;
 use crate::{
     config, db,
     domain::{ChannelEntryId, ChannelInfo, TelegramPost},
@@ -6,18 +7,15 @@ use crate::{
 use anyhow::Context;
 use chrono::Utc;
 use std::{sync::Arc, time::Duration};
-use tokio::{fs, time::sleep};
+use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
-use url::Url;
-
-use super::converter;
 
 pub struct VkPoller {
-    config: Arc<config::Config>,
     db: db::Db,
     id: ChannelEntryId,
     info: ChannelInfo,
     bot: teloxide::Bot,
+    vk_client: vk_api::Client,
     cancellation_token: CancellationToken,
 }
 
@@ -30,12 +28,21 @@ impl VkPoller {
         bot: teloxide::Bot,
         cancellation_token: CancellationToken,
     ) -> Self {
+        let vk_client = vk_api::Client::new(
+            &config.vk.service_key,
+            &config.vk.language,
+            config.vk.debug.as_ref().map(|debug| vk_api::ClientDebug {
+                save_responses: debug.save_responses,
+                responses_dir_path: debug.responses_dir_path.to_owned(),
+            }),
+        );
+
         Self {
-            config,
             db,
             id,
             info,
             bot,
+            vk_client,
             cancellation_token,
         }
     }
@@ -120,7 +127,8 @@ impl VkPoller {
         let mut new_posts = Vec::<vk_api::Post>::new();
         'fetch: loop {
             let posts = self
-                .get_posts(offset, count)
+                .vk_client
+                .get_posts_from_wall(&self.info.vk_public_id, offset, count)
                 .await
                 .context("fetching posts from VK")?;
 
@@ -184,7 +192,8 @@ impl VkPoller {
 
         loop {
             let posts = self
-                .get_posts(offset, count)
+                .vk_client
+                .get_posts_from_wall(&self.info.vk_public_id, offset, count)
                 .await
                 .context("fetching posts from VK")?;
 
@@ -197,73 +206,6 @@ impl VkPoller {
             } else {
                 offset += count;
             }
-        }
-    }
-
-    async fn get_posts(&self, offset: usize, count: usize) -> anyhow::Result<Vec<vk_api::Post>> {
-        const VERSION: &str = "5.137";
-        const METHOD: &str = "wall.get";
-
-        let config = &self.config.vk;
-
-        let url = Url::parse_with_params(
-            &format!("{base}method/{METHOD}", base = &config.server),
-            &[
-                ("v", VERSION),
-                ("lang", &config.language),
-                ("domain", &self.info.vk_public_id),
-                ("offset", &offset.to_string()),
-                ("count", &count.to_string()),
-            ],
-        )
-        .expect("url should be valid");
-
-        let client = reqwest::Client::new();
-
-        let response = client
-            .get(url)
-            .bearer_auth(&config.service_key)
-            .send()
-            .await
-            .context("executing wall.get")?;
-
-        let response = response
-            .text()
-            .await
-            .context("reading response from wall.get")?;
-
-        self.dump_response(&response).await;
-
-        let response = serde_json::from_str::<vk_api::Response<vk_api::Posts>>(&response)
-            .with_context(|| format!("parsing response '{response}' from wall.get"))?;
-
-        Ok(response.response.items)
-    }
-
-    async fn dump_response(&self, response: &str) {
-        let Some(ref debug_config) = self.config.vk.debug else {
-            return;
-        };
-
-        if !debug_config.save_responses {
-            return;
-        }
-
-        let dump_path = debug_config.responses_dir_path.join(format!(
-            "vk-response-{}.json",
-            Utc::now().timestamp_millis()
-        ));
-
-        match fs::write(&dump_path, &response).await {
-            Ok(()) => log::debug!(
-                "Successfully save vk response into file '{path}'",
-                path = dump_path.display(),
-            ),
-            Err(err) => log::error!(
-                "Failed to save vk response into file '{path}': {err}",
-                path = dump_path.display(),
-                err = err,
-            ),
         }
     }
 }

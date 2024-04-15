@@ -6,7 +6,6 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
-use url::Url;
 
 #[derive(Clone, Debug, Deserialize, Validate)]
 pub struct Config {
@@ -22,9 +21,6 @@ pub struct Config {
 
 #[derive(Clone, Debug, Deserialize, Validate)]
 pub struct Vk {
-    #[garde(custom(validators::is_base_url))]
-    pub server: Url,
-
     #[garde(length(min = 1))]
     pub language: String,
 
