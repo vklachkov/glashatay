@@ -1,3 +1,4 @@
+use crate::domain::VkId;
 use anyhow::Context;
 use chrono::Utc;
 use serde::Serialize;
@@ -61,7 +62,7 @@ impl Client {
     /// * `count` - Количество записей, которое необходимо получить. Максимальное значение: 100.
     pub async fn get_posts_from_wall(
         &self,
-        id: &str,
+        id: &VkId,
         offset: usize,
         count: usize,
     ) -> anyhow::Result<Vec<super::Post>> {
@@ -75,7 +76,7 @@ impl Client {
         self.get::<_, super::Posts>(
             "wall.get",
             Params {
-                domain: id,
+                domain: &id.0,
                 offset,
                 count,
             },

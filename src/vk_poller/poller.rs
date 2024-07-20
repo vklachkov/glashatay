@@ -17,6 +17,7 @@ pub struct VkPoller {
     bot: teloxide::Bot,
     vk_client: vk_api::Client,
     cancellation_token: CancellationToken,
+    stop_token: CancellationToken,
 }
 
 impl VkPoller {
@@ -27,6 +28,7 @@ impl VkPoller {
         info: ChannelInfo,
         bot: teloxide::Bot,
         cancellation_token: CancellationToken,
+        stop_token: CancellationToken,
     ) -> Self {
         let vk_client = vk_api::Client::new(
             &config.vk.service_key,
@@ -44,11 +46,12 @@ impl VkPoller {
             bot,
             vk_client,
             cancellation_token,
+            stop_token,
         }
     }
 
     pub async fn run(mut self) {
-        while !self.cancellation_token.is_cancelled() {
+        while !self.cancellation_token.is_cancelled() && !self.stop_token.is_cancelled() {
             let should_poll = self
                 .info
                 .last_poll_datetime
@@ -58,11 +61,12 @@ impl VkPoller {
             if !should_poll {
                 tokio::select! {
                     _ = self.cancellation_token.cancelled() => { break; },
+                    _ = self.stop_token.cancelled() => { break; },
                     _ = sleep(Duration::from_millis(1000)) => { continue; },
                 }
             }
 
-            log::debug!("Time to poll VK wall '{}'...", self.info.vk_public_id);
+            log::debug!("Time to poll VK wall '{}'...", self.info.vk_public_id.0);
 
             if let Some(last_post_datetime) = self.info.last_post_datetime {
                 self.poll_new_posts(last_post_datetime).await;
@@ -73,6 +77,10 @@ impl VkPoller {
             self.info.last_poll_datetime = Some(Utc::now());
             self.db.update_channel(self.id, &self.info).await;
         }
+
+        if self.stop_token.is_cancelled() {
+            // TODO: Send message to chat
+        }
     }
 
     async fn poll_new_posts(&mut self, last_post_datetime: chrono::DateTime<chrono::Utc>) {
@@ -81,7 +89,7 @@ impl VkPoller {
             Err(err) => {
                 return log::warn!(
                     "Failed to fetch new posts from VK wall '{id}': {err:#}",
-                    id = self.info.vk_public_id
+                    id = self.info.vk_public_id.0
                 );
             }
         };
@@ -167,7 +175,7 @@ impl VkPoller {
     }
 
     async fn first_poll(&mut self) {
-        let id = &self.info.vk_public_id;
+        let id = &self.info.vk_public_id.0;
 
         match self.get_first_non_pinned_post_id().await {
             Ok(Some(post)) => {

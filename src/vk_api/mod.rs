@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 mod attachment;
 mod client;
 mod posts;

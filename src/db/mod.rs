@@ -150,4 +150,23 @@ impl Db {
         .await
         .expect("database queries shouldn't panic")
     }
+
+    pub async fn remove_channel(&self, id: ChannelEntryId) {
+        let row_id: i32 = id.0;
+
+        let conn = self.conn.clone();
+
+        tokio::task::spawn_blocking(move || {
+            use schema::channels;
+
+            let mut conn = conn.lock().expect("connection shouldn't be poisoned");
+
+            diesel::delete(channels::table)
+                .filter(channels::id.eq(row_id))
+                .execute(&mut *conn)
+                .expect("database operations should be successful");
+        })
+        .await
+        .expect("database queries shouldn't panic")
+    }
 }

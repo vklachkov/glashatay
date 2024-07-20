@@ -25,7 +25,7 @@ impl From<domain::ChannelInfo> for NewChannel {
     fn from(info: domain::ChannelInfo) -> Self {
         Self {
             tg_channel_id: info.tg_channel.0,
-            vk_public_id: info.vk_public_id,
+            vk_public_id: info.vk_public_id.0,
             poll_interval_secs: info
                 .poll_interval
                 .num_seconds()
@@ -63,7 +63,7 @@ impl From<Channel> for domain::ChannelInfo {
     fn from(ch: Channel) -> Self {
         Self {
             tg_channel: domain::TelegramChannelId(ch.tg_channel_id),
-            vk_public_id: ch.vk_public_id,
+            vk_public_id: domain::VkId(ch.vk_public_id),
             poll_interval: chrono::Duration::seconds(ch.poll_interval_secs.into()),
             last_poll_datetime: ch.last_poll_timestamp.map(|ts| {
                 chrono::DateTime::from_timestamp(ts, 0)
