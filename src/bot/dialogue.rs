@@ -260,7 +260,7 @@ async fn receive_entry_for_delete(
     let message = send_interative(
         &bot,
         &dialogue,
-        &APPROVE_CHANNEL_DELETION_MESSAGE(number),
+        &APPROVE_CHANNEL_DELETION_MESSAGE(&info.vk_public_id, &info.tg_channel),
         &*APPROVE_CHANNEL_DELETION_BUTTONS,
     )
     .await?;
