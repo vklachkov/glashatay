@@ -1,3 +1,4 @@
+use super::{data::*, utils::*};
 use crate::{
     domain::{ChannelEntryId, ChannelInfo, TelegramChannelId, VkId},
     vk_poller,
@@ -10,14 +11,13 @@ use teloxide::{
     },
     macros::BotCommands,
     prelude::*,
-    types::{
-        Chat, ChatKind, ChatPublic, ForwardedFrom, InlineKeyboardButton, InlineKeyboardMarkup,
-    },
+    types::{Chat, ChatKind, ChatPublic, ForwardedFrom},
 };
 use url::Url;
 
-type BotDialogue = Dialogue<BotState, InMemStorage<BotState>>;
-type HandlerResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+pub(crate) type BotDialogue = Dialogue<BotState, InMemStorage<BotState>>;
+pub(crate) type HandlerResult = Result<(), anyhow::Error>;
+pub(crate) type HandlerError = anyhow::Error;
 
 #[derive(BotCommands, Clone)]
 #[command(rename_rule = "lowercase")]
@@ -73,13 +73,13 @@ pub async fn start(bot: Bot, poller: vk_poller::VkPollManager) -> ShutdownToken 
 }
 
 #[rustfmt::skip]
-fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>> {
+fn schema() -> UpdateHandler<HandlerError> {
     use dptree::case;
 
     let command_handler = teloxide::filter_command::<BotCommand, _>()
         .branch(
             case![BotState::Empty]
-                .branch(case![BotCommand::Start].endpoint(help))
+                .branch(case![BotCommand::Start].endpoint(hello))
                 .branch(case![BotCommand::Help].endpoint(help))
                 .branch(case![BotCommand::Add].endpoint(add_channel))
                 .branch(case![BotCommand::Delete].endpoint(delete_channel))
@@ -111,37 +111,29 @@ fn schema() -> UpdateHandler<Box<dyn std::error::Error + Send + Sync + 'static>>
     .branch(callback_query_handler)
 }
 
-async fn help(bot: Bot, dialogue: BotDialogue) -> HandlerResult {
-    bot.send_message(dialogue.chat_id(), "Start/Help TODO")
-        .await?;
-
-    Ok(())
+/// Команда `/start`.
+async fn hello(bot: Bot, dialogue: BotDialogue) -> HandlerResult {
+    send_msg(&bot, dialogue.chat_id(), START_MESSAGE).await
 }
 
+/// Команда `/help`.
+async fn help(bot: Bot, dialogue: BotDialogue) -> HandlerResult {
+    send_msg(&bot, dialogue.chat_id(), HELP_MESSAGE).await
+}
+
+/// Команда `/add`.
 async fn add_channel(bot: Bot, dialogue: BotDialogue) -> HandlerResult {
-    let text = "Привет! Перешли, пожалуйста, сообщение из паблика, в который будут отправляться посты из ВКонтакте";
-    bot.send_message(dialogue.chat_id(), text).await?;
+    send_msg(&bot, dialogue.chat_id(), REQUEST_CHANNEL_MESSAGE).await?;
 
     dialogue
         .update(BotState::AddingChanneд(
             AddingChannelBotState::ReceiveChannelId,
         ))
-        .await?;
-
-    Ok(())
+        .await
+        .map_err(Into::into)
 }
 
 async fn receive_channel_id(bot: Bot, dialogue: BotDialogue, msg: Message) -> HandlerResult {
-    let non_channel_forward = async {
-        bot.send_message(
-            dialogue.chat_id(),
-            "Сообщение должно быть переслано из канала",
-        )
-        .await?;
-
-        Ok(())
-    };
-
     let Some(ForwardedFrom::Chat(Chat {
         id: channel_id,
         kind:
@@ -152,24 +144,21 @@ async fn receive_channel_id(bot: Bot, dialogue: BotDialogue, msg: Message) -> Ha
         ..
     })) = msg.forward_from()
     else {
-        return non_channel_forward.await;
+        return send_msg(&bot, dialogue.chat_id(), INVALID_CHANNEL_MESSAGE).await;
     };
 
     if channel_id.0 >= 0 {
-        return non_channel_forward.await;
+        return send_msg(&bot, dialogue.chat_id(), INVALID_CHANNEL_MESSAGE).await;
     }
 
-    bot.send_message(
+    send_msg(
+        &bot,
         dialogue.chat_id(),
-        format!("Посты будут публиковаться в паблик '{channel_title}' ({channel_id})"),
+        &CHANNEL_RECEIVED_MESSAGE(channel_id, channel_title),
     )
     .await?;
 
-    bot.send_message(
-        dialogue.chat_id(),
-        "Напишите, пожалуйста, ссылку на стену сообщества, группы или человека во ВКонтакте",
-    )
-    .await?;
+    send_msg(&bot, dialogue.chat_id(), REQUEST_VK_URL_MESSAGE).await?;
 
     dialogue
         .update(BotState::AddingChanneд(
@@ -190,23 +179,16 @@ async fn receive_vk_url(
     poller: vk_poller::VkPollManager,
 ) -> HandlerResult {
     let Some(url) = msg.text().and_then(|text| Url::parse(text).ok()) else {
-        bot.send_message(
-            dialogue.chat_id(),
-            "Напишите, пожалуйста, ссылку на стену сообщества, группы или человека во ВКонтакте",
-        )
-        .await?;
-
-        return Ok(());
+        return send_msg(&bot, dialogue.chat_id(), REQUEST_VK_URL_MESSAGE).await;
     };
 
-    // Первый символ всегда /
-    let vk_id = VkId(url.path().chars().skip(1).collect::<String>());
-
+    let vk_id = VkId::from(url);
     let tg_id = TelegramChannelId(posts_channel_id.0);
 
-    bot.send_message(
+    send_msg(
+        &bot,
         dialogue.chat_id(),
-        format!("Отлично! Посты будут репоститься из {vk_id} в {tg_id}"),
+        &CHANNEL_ADDED_MESSAGE(&vk_id, &tg_id),
     )
     .await?;
 
@@ -225,6 +207,7 @@ async fn receive_vk_url(
     Ok(())
 }
 
+/// Команда `/delete`.
 async fn delete_channel(
     bot: Bot,
     dialogue: BotDialogue,
@@ -233,18 +216,14 @@ async fn delete_channel(
     let channels = poller.get_channels().await;
 
     if channels.is_empty() {
-        bot.send_message(dialogue.chat_id(), "Нет каналов").await?;
-        return Ok(());
+        return send_msg(&bot, dialogue.chat_id(), NO_CHANNELS_MESSAGE).await;
     }
 
-    bot.send_message(
+    send_msg(
+        &bot,
         dialogue.chat_id(),
-        format!(
-            "Привет! Отправьте номер записи, которую хотите удалить:\n\n{}",
-            format_channels_to_string(&channels)
-        ),
+        &REQUEST_CHANNEL_NUMBER_MESSAGE(&channels),
     )
-    .disable_web_page_preview(true)
     .await?;
 
     dialogue
@@ -263,10 +242,7 @@ async fn receive_entry_for_delete(
     channels: HashMap<ChannelEntryId, ChannelInfo>,
 ) -> HandlerResult {
     let Some(text) = msg.text() else {
-        bot.send_message(dialogue.chat_id(), "Напишите, пожалуйста, номер записи")
-            .await?;
-
-        return Ok(());
+        return send_msg(&bot, dialogue.chat_id(), INVALID_CHANNEL_NUMBER_MESSAGE).await;
     };
 
     let Some(number) = text
@@ -274,29 +250,20 @@ async fn receive_entry_for_delete(
         .ok()
         .and_then(|number: usize| number.checked_sub(1))
     else {
-        bot.send_message(dialogue.chat_id(), "Напишите, пожалуйста, номер записи")
-            .await?;
-
-        return Ok(());
+        return send_msg(&bot, dialogue.chat_id(), INVALID_CHANNEL_NUMBER_MESSAGE).await;
     };
 
     let Some((id, info)) = channels.into_iter().nth(number) else {
-        bot.send_message(dialogue.chat_id(), "Напишите, пожалуйста, номер записи")
-            .await?;
-
-        return Ok(());
+        return send_msg(&bot, dialogue.chat_id(), INVALID_CHANNEL_NUMBER_MESSAGE).await;
     };
 
-    let message = bot
-        .send_message(
-            dialogue.chat_id(),
-            format!("Вы уверены, что хотите удалить запись {text}?",),
-        )
-        .reply_markup(InlineKeyboardMarkup::new([[
-            InlineKeyboardButton::callback("Да", true.to_string()),
-            InlineKeyboardButton::callback("Нет", false.to_string()),
-        ]]))
-        .await?;
+    let message = send_interative(
+        &bot,
+        &dialogue,
+        &APPROVE_CHANNEL_DELETION_MESSAGE(number),
+        &*APPROVE_CHANNEL_DELETION_BUTTONS,
+    )
+    .await?;
 
     dialogue
         .update(BotState::DeletingChannel(
@@ -326,25 +293,14 @@ async fn approve_delete(
         let vk_id = &channel_info.vk_public_id;
         let tg_id = &channel_info.tg_channel;
 
-        bot.edit_message_text(
-            dialogue.chat_id(),
-            message.id,
-            format!("Остановка пересылки постов из {vk_id} в канал {tg_id}..."),
-        )
-        .await?;
+        edit_msg(&bot, &message, &STOPPING_CHANNEL_JOB_MESSAGE(vk_id, tg_id)).await?;
 
         let delete_success = poller.delete(channel_id).await;
         assert!(delete_success);
 
-        bot.edit_message_text(
-            dialogue.chat_id(),
-            message.id,
-            format!("Пересылка постов из {vk_id} в канал {tg_id} прекращена!"),
-        )
-        .await?;
+        edit_msg(&bot, &message, &CHANNEL_DELETED_MESSAGE(vk_id, tg_id)).await?;
     } else {
-        bot.edit_message_text(dialogue.chat_id(), message.id, "Удаление отменено!")
-            .await?;
+        edit_msg(&bot, &message, CHANNEL_DELETION_CANCELLED_MESSAGE).await?;
     }
 
     dialogue.update(BotState::Empty).await?;
@@ -352,6 +308,7 @@ async fn approve_delete(
     Ok(())
 }
 
+/// Команда `/list`.
 async fn list_channels(
     bot: Bot,
     dialogue: BotDialogue,
@@ -360,49 +317,19 @@ async fn list_channels(
     let channels = poller.get_channels().await;
 
     if channels.is_empty() {
-        bot.send_message(dialogue.chat_id(), "Нет каналов").await?;
-        return Ok(());
+        send_msg(&bot, dialogue.chat_id(), NO_CHANNELS_MESSAGE).await
+    } else {
+        send_msg(&bot, dialogue.chat_id(), &LIST_CHANNELS_MESSAGE(&channels)).await
     }
-
-    bot.send_message(
-        dialogue.chat_id(),
-        format!(
-            "Ваш список каналов:\n\n{}",
-            format_channels_to_string(&channels)
-        ),
-    )
-    .disable_web_page_preview(true)
-    .await?;
-
-    Ok(())
 }
 
-fn format_channels_to_string(channels: &HashMap<ChannelEntryId, ChannelInfo>) -> String {
-    channels
-        .iter()
-        .enumerate()
-        .map(|(n, (_id, info))| {
-            let n = n + 1;
-            let vk_id = &info.vk_public_id;
-            let tg_id = &info.tg_channel;
-
-            format!("{n}. Из {vk_id} в {tg_id}")
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
-}
-
+/// Команда `/cancel`.
 async fn cancel_action(bot: Bot, dialogue: BotDialogue) -> HandlerResult {
-    bot.send_message(dialogue.chat_id(), "Отмена действия")
-        .await?;
-
     dialogue.update(BotState::Empty).await?;
-
-    Ok(())
+    send_msg(&bot, dialogue.chat_id(), CANCEL_MESSAGE).await
 }
 
+/// Fallback.
 async fn other(bot: Bot, dialogue: BotDialogue) -> HandlerResult {
-    bot.send_message(dialogue.chat_id(), "Не понимаю(").await?;
-
-    Ok(())
+    send_msg(&bot, dialogue.chat_id(), UNKNOWN_ACTION_MESSAGE).await
 }

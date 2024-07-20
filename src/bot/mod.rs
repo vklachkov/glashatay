@@ -1,4 +1,6 @@
+mod data;
 mod dialogue;
+mod utils;
 
 use crate::{
     domain::{TelegramPost, TelegramPostPhoto},
